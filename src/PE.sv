@@ -58,7 +58,9 @@ module PE (
          internal_register <= 0;
       end
       else if(load) begin
-         configuration <= instruction;
+         if(instruction != 4'b0010) begin
+            configuration <= instruction;
+         end
          internal_register <= internal_data_in;
       end
       else begin

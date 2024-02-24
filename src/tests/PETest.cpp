@@ -19,34 +19,16 @@ int main() {
   to->trace(trace, 5);
   trace->open("waveform.vcd");
 
-  //  float weight = 1;
-  //  float north_val = 0;
-  //  float west_val = 2;
-  //  uint16_t af = float32_to_bfloat16(west_val);
-  //  uint16_t bf = float32_to_bfloat16(weight);
-  //  float should_be = (bfloat16_to_float32(extract_bfloat16_components(af)) * bfloat16_to_float32(extract_bfloat16_components(bf)))+ north_val;
-  //  printf("%f\n", should_be);
-
-  
-  //  uint16_t weight_bits = float32_to_bfloat16(weight);
-  //  uint16_t west_bits = float32_to_bfloat16(west_val);
   to->load = 1;
   float internal = 36.553f;
   float a = 6.812;
   float b = 18.123;
   float c = 32.2112;
   to->internal_data_in = *((uint32_t*)(&internal));
-  to->instruction = 2;
-
-  //  uint32_t north_bits = *((uint32_t*)(&north_val));
-  //  to->i_west = west_bits;
-  //  to->i_weight = weight_bits;
-  //  to->i_north = north_bits;
-
-
-  // bfloat16 o_east;
-  // ihnt32_t o_south;
-
+  to->instruction = 10;
+  float val;
+  if (to->instruction == 10) val = internal;
+  else val = b;
   while (cnt != MAX_TIME) {
     if(cnt > 10) {
       to->load = 0;
@@ -58,8 +40,10 @@ int main() {
     trace->dump(cnt);
     cnt++;
     to->clk ^= 1; 
-
   }
-    trace->close();
-    exit(0);
+  printf("val is %f, internal is %f, b is %f\n", val, internal, b);
+  printf("Got: %f\n", *((float*)(&to->out_to_switch)));
+  printf("Expected: %f\n", (a * val) + c);
+  trace->close();
+  exit(0);
 }
