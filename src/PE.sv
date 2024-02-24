@@ -1,13 +1,3 @@
-   // 3. FSUB
-   // 4. Finv
-   // 5. FReLU
-   // 6. Fsqrt
-   // 7. FLn
-   // 8. FLT
-   // 9. FLE
-   // 10. FEQ
-   // 11. Systolic FMA
-   
 // Implementation of one PE in the Accelerant Mesh
 
 module PE (
@@ -39,7 +29,18 @@ module PE (
    // 0 001 -> Fmul
    // 1 010 -> Systolic FMA
    // 0 011 -> Regular FMA
-
+   
+// To implement:
+   // 3. FSUB
+   // 4. Finv
+   // 5. FReLU
+   // 6. Fsqrt
+   // 7. FLn
+   // 8. FLT
+   // 9. FLE
+   // 10. FEQ
+   // 11. Systolic FMA
+   
    logic [31:0]       a_input_pins[5:0];
    logic [31:0]       b_input_pins[5:0];
    logic [31:0]       c_input_pins[5:0];
@@ -64,13 +65,13 @@ module PE (
          internal_register <= internal_data_in;
       end
       else begin
-         a_input_pins[instruction[2:0]] <= a;
-         if (instruction[3]) begin
-            b_input_pins[instruction[2:0]] <= internal_register;
+         a_input_pins[configuration[2:0]] <= a;
+         if (configuration[3]) begin
+            b_input_pins[configuration[2:0]] <= internal_register;
          end
-         else b_input_pins[instruction[2:0]] <= b;
-         c_input_pins[instruction[2:0]] <= c;
-         out_to_switch <= out_pins[instruction[2:0]];
+         else b_input_pins[configuration[2:0]] <= b;
+         c_input_pins[configuration[2:0]] <= c;
+         out_to_switch <= out_pins[configuration[2:0]];
       end
    end
    
