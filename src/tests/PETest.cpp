@@ -38,7 +38,7 @@ int main() {
       }
       if (cnt > 40 && cnt < 50) {
         to->load = 1;
-        to->instruction = 0;
+        to->instruction = 1;
         val = b;
       }
       else to->load = 0;
