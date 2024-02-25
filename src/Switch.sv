@@ -25,7 +25,7 @@ module Switch (
 
                output logic [47:0] out_config[3:0],
                output logic [31:0] out_data [3:0],
-               output logic [1:0]  next_input_flag,
+               output logic [1:0]  next_input_flag
 
 );
 
