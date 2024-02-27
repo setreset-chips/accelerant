@@ -48,10 +48,10 @@ module PE (
    
 
 
-   fadd fa(a_input_pins[0], b_input_pins[0], out_pins[0]);
-   fmul fm(a_input_pins[1], b_input_pins[1], out_pins[1]);
+   fadd fadd(a_input_pins[0], b_input_pins[0], out_pins[0]);
+   fmul fmul(a_input_pins[1], b_input_pins[1], out_pins[1]);
    FMA systolic_fma(a_input_pins[2], b_input_pins[2], c_input_pins[2], out_pins[2]);
-   FMA fma2(a_input_pins[3], b_input_pins[3], c_input_pins[3], out_pins[3]);
+   FMA fma(a_input_pins[3], b_input_pins[3], c_input_pins[3], out_pins[3]);
 
    always @(posedge clk) begin
       if(reset) begin
