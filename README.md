@@ -3,7 +3,7 @@
 Make sure you have `verilator`
 
 ```shell
-cd tests
+cd rtl/harnesses
 make
 ```
 
