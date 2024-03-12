@@ -68,9 +68,13 @@ module PE (
          a_input_pins[configuration[2:0]] <= a;
          if (configuration[3]) begin
             b_input_pins[configuration[2:0]] <= internal_register;
+            c_input_pins[configuration[2:0]] <= b;
          end
-         else b_input_pins[configuration[2:0]] <= b;
-         c_input_pins[configuration[2:0]] <= c;
+         else begin 
+            b_input_pins[configuration[2:0]] <= b;
+            c_input_pins[configuration[2:0]] <= c;
+         end
+         
          out_to_switch <= out_pins[configuration[2:0]];
       end
    end

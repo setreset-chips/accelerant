@@ -11,62 +11,122 @@
 
 // Configuration is XY routed
 // Need data pins to be bidirectional
+// Switches can only be programmed to do one instruction, but can send their output in different pin directions. If you want to do different operations on the same input, you have to program two PE's to do it.
 module Switch (
-               input logic          clk,
-               input logic          reset,
-               input logic          load,
-               input logic          configuration_mux, // 1 -> n, 0 -> w
-               input logic [127:0]  i_north_config,
-               input logic [127:0]  i_west_config,
-               output logic [127:0] o_south_config,
-               output logic [127:0] o_east_config,
-               output logic         next_configuration_mux);
+               input logic         clk,
+               input logic         reset,
+               input logic         load,
+               input logic         configuration_mux, // 1 -> n, 0 -> w
+               input logic [63:0]  i_north_config,
+               input logic [63:0]  i_west_config,
+               output logic [63:0] o_south_config,
+               output logic [63:0] o_east_config,
+               input logic         edge_trigger,
+               inout [31:0]        south,
+               inout [31:0]        east,
+               inout [31:0]        north,
+               inout [31:0]        west,
+               output logic        next_configuration_mux);
 
    /*
-    24 bit configuration (max of 12x12 mesh)
-    4 bit designation (2 for port sampler + 2 for output designator)
+    20 bit configuration
+    8 bit designation (4 for port sampler + 4 for output designator)
     4 bit for instruction opcode
-    32 bit A (bfloat16)
-    32 bit B (bfloat16)
-    32 bit C/Systolic Weight
+    32 bit internal data
     */
-   logic [127:0] packet; // 128 bit packet for configuration
-   logic [1:0]   data_port_sampler; // 2 bit port sampler
-   logic [1:0]   data_out_designator; // 2 bit output designator
-   logic [3:0]   instruction; // 4 bit instruction
+   logic [63:0] packet; // 64 bit packet for configuration
+   logic [3:0]  data_port_sampler; // 4 bit port sampler
+   logic [3:0]  data_out_designator; // 4 bit output designator
+   logic [3:0]  instruction; // 4 bit instruction
+   logic [31:0] input_buffers [3:0];
+   logic [31:0] output_buffers [3:0];
 
+   logic [31:0]  internal;
+   logic [31:0]  out;
+   logic [31:0]  pe_inputs [2:0];
+   logic         first_read;
+   
+   int           i;
+   int           pe_pin_counter;
+   
+   PE corresponding_pe(.clk(clk),
+                       .reset(reset),
+                       .load(load),
+                       .instruction(instruction),
+                       .a(pe_inputs[0]),
+                       .b(pe_inputs[1]),
+                       .c(pe_inputs[2]),
+                       .out_to_switch(out),
+                       .internal_data_in(internal));
+   logic west_edge_pe;
+   logic north_edge_pe;
+   assign west_edge_pe = (&(data_port_sampler) & &(data_out_designator));
+   assign north_edge_pe = (!(&(data_port_sampler)) & &(data_out_designator));
+
+   // If it is a edge PE, it always takes from north/west and gives to east/south
+   assign south = (data_out_designator[0] | north_edge_pe) ? out : 'z;
+   assign east = (data_out_designator[1] | west_edge_pe) ? out : 'z;
+   assign north = (data_out_designator[2] & !(west_edge_pe | north_edge_pe)) ? out : 'z;
+   assign west = (data_out_designator[3] & !(west_edge_pe | north_edge_pe)) ? out : 'z;
+   
+   always @(posedge clk) begin
+      if (reset) begin
+         packet <= 0;
+      end
+      input_buffers[0] <= (data_port_sampler[0] & !(west_edge_pe | north_edge_pe)) ? south : 0;
+      input_buffers[1] <= (data_port_sampler[1] & !(west_edge_pe | north_edge_pe)) ? east : 0;
+      input_buffers[2] <= (data_port_sampler[2] | north_edge_pe) ? north : 0;
+      input_buffers[3] <= (data_port_sampler[3] | west_edge_pe) ? west : 0;
+      
+      if(load) begin // Make sure you are allowed to change the config
+         packet <= (configuration_mux) ? i_west_config : i_north_config;
+         if(packet[63] && |(packet[62:44]) == 0) begin
+            data_port_sampler <= packet[43:40];
+            data_out_designator <= packet[39:36];
+            instruction <= packet[35:32];
+            internal <= packet[31:0];
+            
+         end
+         else begin
+            next_configuration_mux <= packet[63];
+            if(packet[63]) o_east_config <= {packet[63:44] << 1, packet[43:0]};
+            else o_south_config <= {packet[63:44] << 1, packet[43:0]};
+         end
+      end
    /*
     South = 0
     East = 1
     North = 2
     West = 3
     */
-   logic [31:0]  a;
-   logic [31:0]  b;
-   logic [31:0]  c;
-   logic [31:0]  systolic_weight;
-   logic [31:0]  out;
-
-   always @(posedge clk) begin
-      if (reset) begin
-         packet <= 0;
-      end
-      
-      if(load) begin // Make sure you are allowed to change the config
-         packet <= (configuration_mux) ? i_west_config : i_north_config;
-         if(packet[127] && |(packet[126:104]) == 0) begin
-            data_port_sampler <= packet[103:102];
-            data_out_designator <= packet[101:100];
-            instruction <= packet[99:96];
-            a <= packet[95:64];
-            b <= packet[63:32];
-            if(instruction == 4'b0010) c <= packet[31:0];
-            else systolic_weight <= packet[31:0];
+      else begin
+         pe_pin_counter <= 0;
+         if(west_edge_pe) begin
+            // have to read west 2 times
+            if(!edge_trigger) begin
+               pe_inputs[0] <= west;
+            end
+            else begin
+               pe_inputs[1] <= west;
+            end
+         end
+         else if (north_edge_pe) begin
+            if (!edge_trigger) begin
+               pe_inputs[0] <= input_buffers[2];
+            end
+            else begin
+               pe_inputs[1] <= input_buffers[2];
+            end
+            
          end
          else begin
-            next_configuration_mux <= packet[127];
-            if(packet[127]) o_east_config <= {packet[127:104] << 1, packet[103:0]};
-            else o_south_config <= {packet[127:104] << 1, packet[103:0]};
+            // Otherwise, do this:
+            for(i = 0; i < 4; i++) begin
+               if(|((data_port_sampler >> i) & 4'b0001)) begin
+                  pe_inputs[pe_pin_counter] <= input_buffers[i];
+                  pe_pin_counter <= pe_pin_counter + 1; // has to be blocking (L)
+               end
+            end
          end
       end
    end

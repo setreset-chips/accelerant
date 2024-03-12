@@ -1,3 +1,4 @@
+
 #include <stdlib.h>
 #include <stdint.h>
 #include <iostream>
@@ -12,50 +13,35 @@ uint8_t cnt = 0;
 
 using namespace std;
 
+uint64_t INST = 0x80000ff140df07b3;
+
 int main() { 
   VMesh *to = new VMesh;
   Verilated::traceEverOn(true);
   VerilatedVcdC *trace = new VerilatedVcdC;
   to->trace(trace, 5);
   trace->open("waveform.vcd");
-
-
+  to->configuration_vector_port[0] = INST;
+  to->configuration_vector_port[1] = INST;
+  to->configuration_vector_port[2] = INST;
+  to->configuration_vector_port[3] = INST;
+  to->loads[0][0] = ftoi(1.2);
+  to->loads[0][1] = ftoi(2.3);
+  to->loads[1][0] = ftoi(3.4);
+  to->loads[1][1] = ftoi(4.5);
+  to->loads[2][0] = ftoi(5.6);
+  to->loads[2][1] = ftoi(6.7);
+  to->loads[3][0] = ftoi(7.8);
+  to->loads[3][1] = ftoi(8.9);
   to->load = 1;
-  float a = 4.8f;
-  float b = 7.3f;
-  float c = 100.63f;
-  for(int i = 0; i < 4; i++) {
-    for(int j = 0; j < 3; j++){
-      if(j == 0) to->in_data[i][j] = *((uint32_t*)(&a));
-      if(j == 1) to->in_data[i][j] = *((uint32_t*)(&b));
-      if(j == 2) to->in_data[i][j] = *((uint32_t*)(&c));
-    }
-  }
-
   
-
-  to->configuration_program[1] = 0xF0D100000000;
-  //to->clk ^= 1;
-  //to->clk ^= 1;
-  while (cnt != MAX_TIME) {
-    if(cnt >= 10) {
-      to->configuration_program[1] = 0xE0D000000000;
-    }
-    if(cnt >= 18) {
-      to->configuration_program[1] = 0xC0D300000000;
-    }
-    if(cnt >= 26) {
-      to->configuration_program[1] = 0x80D300000000;
-    }
-    if(cnt >= 100) {
-      to->load = 0;
-    }
+  while(cnt != MAX_TIME) {
+    if(cnt > 50) to->load = 0;
     to->eval();
     trace->dump(cnt);
     cnt++;
     to->clk ^= 1; 
   }
-  printf("%f\n", *((float*)(&to->out)));
   trace->close();
   exit(0);
 }

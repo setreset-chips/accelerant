@@ -33,6 +33,14 @@ float int32_to_float_32(uint32_t val) {
   float *f = (float*)&val;
   return *f;
 }
+float itof(uint32_t val) {
+  float *f = (float*)&val;
+  return *f;
+}
+uint32_t ftoi(float val) {
+  uint32_t *f_as_int = (uint32_t*)&val;
+  return *f_as_int;
+}
 
 
 #endif

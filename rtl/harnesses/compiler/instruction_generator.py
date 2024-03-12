@@ -12,24 +12,56 @@
 
 import struct
 
-example_route = 0b101000000000000000000000
-erb1 = (example_route >> 16) & 0xFF
-erb2 = (example_route >> 8) & 0xFF
-erb3 = (example_route >> 0) & 0xFF
-poi = 0b11010011 # take it from the west, give to FMA val to east
-A = 68.312
-B = 22.1231
-C = 31.123184
-internal_weight = 99.7
-if((poi & 0xF) == 0b0011):
-    val = internal_weight
-else:
-    val = C
-out = struct.pack('!BBBBfff', erb1, erb2, erb3, poi, A, B, val)
-out = out.hex()
-lower = int(out,16) & 0xFFFFFFFFFFFFFFFF
-upper = (int(out, 16)>>64) & 0xFFFFFFFFFFFFFFFF
+
+if __name__ == '__main__':
+    example_route = 0b10000000000000000000
+    internal_weight = 6.96969
+    bits = (struct.unpack('!i',struct.pack('!f',internal_weight))[0])
+    # take it from the west+north, and give it to the south
+    # 1100 port sampler
+    # 0001 output
+    # wnes
+    data_inout_designation = 0b11111111
+    instruction = 0b0001
+    print(f"{example_route:x}{data_inout_designation:x}{instruction:x}{bits:x}")
 
 
-print(f"{hex(upper)}")
-print(f"{hex(lower)}")
+
+'''
+  * * * *
+* a-b . .
+    |
+* . c-d . 
+      |
+* . . o .
+* . . . .
+'''
+'''
+  * * * *
+* a-b . .
+  | |
+* --c-d . 
+    | |
+* . e-f=o
+* . . . .
+'''
+# b = b + a
+# c = (b * c) + a
+# e = e * c
+# d = d + c
+# f = d * e
+# out = f
+
+# configuration:
+# c.in = west
+# a.out = east
+# b.in = west
+# b.out = south
+# c.in = west
+# c.in = north
+# c.out = east
+# c.out = south
+# d.in = west, e.in = north
+# d.out = south, e.out = east
+# f.in = 
+
