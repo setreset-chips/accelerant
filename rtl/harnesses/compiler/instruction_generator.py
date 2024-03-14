@@ -22,7 +22,7 @@ if __name__ == '__main__':
     # 0001 output
     # wnes
     data_inout_designation = 0b11111111
-    instruction = 0b0001
+    instruction = 0b1010
     print(f"{example_route:x}{data_inout_designation:x}{instruction:x}{bits:x}")
 
 

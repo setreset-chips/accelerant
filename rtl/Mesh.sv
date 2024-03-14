@@ -3,14 +3,14 @@ module Mesh (
              input logic        reset,
              input logic        load,
              input logic [63:0] configuration_vector_port [3:0], // top, left dispatch
-             input logic [31:0] loads [3:0][1:0],
+             input logic [31:0] loads [3:0][1:0], // coarse scalar inputs
+             input logic [31:0] sys_loads [3:0][3:0]
              );
 
 
    logic inputs_done[3:0];
    logic [63:0] i_conf_switch[3:0];
    logic [31:0] i_data_switch [3:0];
-
    
    generate
       genvar i;
@@ -19,10 +19,13 @@ module Mesh (
                             .reset(reset),
                             .load(load),
                             .dir(1),
+                            .delay_row(2 ** i),
+                            .systolic(1),//for testing purposes only
                             .configuration_input(configuration_vector_port[i]),
                             .configuration_output(i_conf_switch[i]),
                             .data_input_1(loads[i][0]),
                             .data_input_2(loads[i][1]),
+                            .systolic_inputs(sys_loads[i]),
                             .data_output_west(i_data_switch[i]),
                             .done(inputs_done[i]));
       end
