@@ -12,7 +12,15 @@
 uint8_t cnt = 0;
 
 using namespace std;
-uint64_t INST = 0x80000ffa40df07b3;
+/*f0000c3a40df07b3
+e0000c3a40df07b3
+c0000c3a40df07b3
+80000c3a40df07b3*/
+uint64_t PROGRAM[4][4] = {
+  {0xf0000c3a40df07b3, 0xe0000c3a40df07b3, 0xc0000c3a40df07b3, 0x80000c3a40df07b3},
+  {0xf0000c3a40df07b3, 0xe0000c3a40df07b3, 0xc0000c3a40df07b3, 0x80000c3a40df07b3},
+  {0xf0000c3a40df07b3, 0xe0000c3a40df07b3, 0xc0000c3a40df07b3, 0x80000c3a40df07b3},
+  {0xf0000c3a40df07b3, 0xe0000c3a40df07b3, 0xc0000c3a40df07b3, 0x80000c3a40df07b3}};
 
 int main() { 
   VMesh *to = new VMesh;
@@ -20,10 +28,7 @@ int main() {
   VerilatedVcdC *trace = new VerilatedVcdC;
   to->trace(trace, 5);
   trace->open("waveform.vcd");
-  to->configuration_vector_port[0] = INST;
-  to->configuration_vector_port[1] = INST;
-  to->configuration_vector_port[2] = INST;
-  to->configuration_vector_port[3] = INST;
+  to->known_instruction = 1;
   to->loads[0][0] = ftoi(1.2);
   to->loads[0][1] = ftoi(2.3);
   to->loads[1][0] = ftoi(3.4);
@@ -36,11 +41,13 @@ int main() {
   for(int i = 0; i < 4; i++) {
     for(int j = 0; j < 4; j++) {
       to->sys_loads[i][j] = ftoi(float((float(i+1)+float(j+1))/2));
+      to->map_instructions[i][j] = PROGRAM[i][j];
       printf("%f ",(float((float(i+1)+float(j+1))/2)));
     }
     printf("\n");
   }
-  
+  uint8_t buffer = 10;
+  uint8_t count = 0;
   while(cnt != MAX_TIME) {
     if(cnt > 50) to->load = 0;
     to->eval();

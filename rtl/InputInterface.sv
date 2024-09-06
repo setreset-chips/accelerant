@@ -32,28 +32,27 @@ module InputInterface(
          data_output_west <= 0;
          configuration_output <= 0;
       end
-      // If load and systolic, we have to load the systolic fifo
-      if (load & systolic) begin
-         delay_by <= delay_row;
-         read_ptr <= 3;
-      end
-      
-      if (!load) begin
+      if(load) begin
+         configuration_output <= configuration_input;
+         if (systolic) begin
+            delay_by <= delay_row;
+         end
+      end 
+      else begin
          if(systolic) begin
-            if(delay_by[0]) begin
-               if(|(read_ptr)) begin
-                  data_output_west <= systolic_fifo[read_ptr];
-                  read_ptr <= read_ptr - 1;
+               if(delay_by[0]) begin
+                  if(read_ptr < 3) begin
+                     data_output_west <= systolic_fifo[read_ptr];
+                     read_ptr <= read_ptr + 1;
+                  end
+                  else if(read_ptr == 3) begin
+                     data_output_west <= systolic_fifo[read_ptr];
+                  end
                end
-               if(!read_ptr) begin
-                  data_output_west <= systolic_fifo[read_ptr];
+               else begin
+                  delay_by <= delay_by >> 1;
+                  data_output_west <= 0;
                end
-            end
-            else begin
-               delay_by <= delay_by >> 1;
-               data_output_west <= 0;
-            end
-            // Have to utilize the shift registers here
          end
          else begin
          // Don't need to use shift registers here, can technically just use a mux system with a signal to the switch
@@ -81,7 +80,6 @@ module InputInterface(
                end
             end
          end
-         configuration_output <= configuration_input;
       end
    end
    

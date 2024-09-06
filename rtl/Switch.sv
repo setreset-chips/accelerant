@@ -22,6 +22,7 @@ module Switch (
                output logic [63:0] o_south_config,
                output logic [63:0] o_east_config,
                input logic         edge_trigger,
+               input logic         systolic,
                inout [31:0]        south,
                inout [31:0]        east,
                inout [31:0]        north,
@@ -39,12 +40,11 @@ module Switch (
    logic [3:0]  data_out_designator; // 4 bit output designator
    logic [3:0]  instruction; // 4 bit instruction
    logic [31:0] input_buffers [3:0];
-   logic [31:0] output_buffers [3:0];
 
    logic [31:0]  internal;
    logic [31:0]  out;
    logic [31:0]  pe_inputs [2:0];
-   logic         first_read;
+   
    
    int           i;
    int           pe_pin_counter;
@@ -56,18 +56,37 @@ module Switch (
                        .a(pe_inputs[0]),
                        .b(pe_inputs[1]),
                        .c(pe_inputs[2]),
+      // Nasty! Let's re-work please
+                       .systolic_a(west),
+                       .systolic_b(north),
+                       .systolic_out(south),
+      // end nasty
                        .out_to_switch(out),
-                       .internal_data_in(internal));
+                       .internal_data_in(internal),
+                       .ready(ready));
    logic west_edge_pe;
    logic north_edge_pe;
+   logic [31:0] east_non_systolic;
+   logic [31:0] east_systolic;
+   logic [31:0] south_non_systolic;
+   logic [31:0] south_systolic;
+   
+   
    assign west_edge_pe = (&(data_port_sampler) & &(data_out_designator));
    assign north_edge_pe = (!(&(data_port_sampler)) & &(data_out_designator));
 
    // If it is a edge PE, it always takes from north/west and gives to east/south
-   assign south = (data_out_designator[0] | north_edge_pe) ? out : 'z;
-   assign east = (data_out_designator[1] | west_edge_pe) ? out : 'z;
    assign north = (data_out_designator[2] & !(west_edge_pe | north_edge_pe)) ? out : 'z;
+   
    assign west = (data_out_designator[3] & !(west_edge_pe | north_edge_pe)) ? out : 'z;
+   
+   assign east = (systolic) ? input_buffers[3] :  ((data_out_designator[1] | west_edge_pe) ? out : 'z);
+
+   assign south = (data_out_designator[0] | north_edge_pe | systolic) ? out : 'z;
+   
+   
+
+   
    
    always @(posedge clk) begin
       if (reset) begin
@@ -112,14 +131,14 @@ module Switch (
          end
          else if (north_edge_pe) begin
             if (!edge_trigger) begin
-               pe_inputs[0] <= input_buffers[2];
+               pe_inputs[0] <= north;
             end
             else begin
-               pe_inputs[1] <= input_buffers[2];
+               pe_inputs[1] <= north;
             end
             
          end
-         else begin
+         else if(!systolic) begin
             // Otherwise, do this:
             for(i = 0; i < 4; i++) begin
                if(|((data_port_sampler >> i) & 4'b0001)) begin

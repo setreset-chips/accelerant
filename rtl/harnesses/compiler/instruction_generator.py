@@ -13,55 +13,22 @@
 import struct
 
 
-if __name__ == '__main__':
-    example_route = 0b10000000000000000000
+def main(route):
     internal_weight = 6.96969
     bits = (struct.unpack('!i',struct.pack('!f',internal_weight))[0])
     # take it from the west+north, and give it to the south
     # 1100 port sampler
     # 0001 output
     # wnes
-    data_inout_designation = 0b11111111
+    data_inout_designation = 0b11000011
     instruction = 0b1010
     print(f"{example_route:x}{data_inout_designation:x}{instruction:x}{bits:x}")
 
 
-
-'''
-  * * * *
-* a-b . .
-    |
-* . c-d . 
-      |
-* . . o .
-* . . . .
-'''
-'''
-  * * * *
-* a-b . .
-  | |
-* --c-d . 
-    | |
-* . e-f=o
-* . . . .
-'''
-# b = b + a
-# c = (b * c) + a
-# e = e * c
-# d = d + c
-# f = d * e
-# out = f
-
-# configuration:
-# c.in = west
-# a.out = east
-# b.in = west
-# b.out = south
-# c.in = west
-# c.in = north
-# c.out = east
-# c.out = south
-# d.in = west, e.in = north
-# d.out = south, e.out = east
-# f.in = 
-
+if __name__ == '__main__':
+    # temp = long(temp << 1) & (0xffffffff)
+    example_route = 0b1111_0000_0000_0000_0000
+    for i in range(4):
+        main(example_route)
+        example_route = (example_route << 1) & 0xFFFFF
+#        print(bin(example_route & 0xFFFFF))

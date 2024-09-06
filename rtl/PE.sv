@@ -10,6 +10,10 @@ module PE (
            input logic [31:0]  a,
            input logic [31:0]  b,
            input logic [31:0]  c,
+           input logic [31:0]  systolic_a,
+           input logic [31:0]  systolic_b,
+           output logic [31:0]  systolic_out,
+           output logic        ready,
            input logic [31:0]  internal_data_in, // data sent by the switch during programming phase
            output logic [31:0] out_to_switch
            );
@@ -17,6 +21,8 @@ module PE (
    // Used for Systolic FMA
    logic [31:0] internal_register;
    logic [3:0]  configuration;
+   logic        internal_ready;
+   
 
 
    // Units:
@@ -45,12 +51,14 @@ module PE (
    logic [31:0]       b_input_pins[5:0];
    logic [31:0]       c_input_pins[5:0];
    logic [31:0]       out_pins[5:0];
+   logic [31:0]       prev_out;
+   
    
 
 
    fadd fadd(a_input_pins[0], b_input_pins[0], out_pins[0]);
    fmul fmul(a_input_pins[1], b_input_pins[1], out_pins[1]);
-   FMA systolic_fma(a_input_pins[2], b_input_pins[2], c_input_pins[2], out_pins[2]);
+   FMA systolic_fma(systolic_a, internal_register, systolic_b, systolic_out, ready);
    FMA fma(a_input_pins[3], b_input_pins[3], c_input_pins[3], out_pins[3]);
 
    always @(posedge clk) begin
@@ -65,26 +73,14 @@ module PE (
          internal_register <= internal_data_in;
       end
       else begin
-         a_input_pins[configuration[2:0]] <= a;
-         if (configuration[3]) begin
-            b_input_pins[configuration[2:0]] <= internal_register;
-            c_input_pins[configuration[2:0]] <= b;
-         end
-         else begin 
+         if(!configuration[3]) begin
+            a_input_pins[configuration[2:0]] <= a;
             b_input_pins[configuration[2:0]] <= b;
             c_input_pins[configuration[2:0]] <= c;
+            out_to_switch <= out_pins[configuration[2:0]];
          end
-         
-         out_to_switch <= out_pins[configuration[2:0]];
       end
    end
-   
-   
-   
-
-   
-
-
 endmodule; // PE
 
 

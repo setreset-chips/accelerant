@@ -1,9 +1,9 @@
 module FMA (
-	input logic [31:0] a_fp,
-	input logic [31:0] b_fp,
-	input logic [31:0] c_fp,
-	
-	output logic [31:0] out_fp
+	input logic [31:0]  a_fp,
+	input logic [31:0]  b_fp,
+	input logic [31:0]  c_fp,
+	output logic [31:0] out_fp,
+        output logic        ready
 );
 
 	logic sign_out, largerMag;
@@ -263,5 +263,6 @@ module FMA (
 	end
 	
 	assign out_fp = {~sign_out, final_exp, final_mantissa[23:1]};
+   
 
 endmodule
